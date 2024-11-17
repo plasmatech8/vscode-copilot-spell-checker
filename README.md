@@ -1,6 +1,8 @@
 # Copilot Spell Checker
 
-This is the README for your extension "copilot-spell-checker". This extension provides intelligent spell checking powered by GitHub Copilot.
+> 🛑 **Project Status**: This project is an experiment that demonstrated some limitations of using language models for spell checking. Feel free to use the code as inspiration, but be aware that it's not production-ready.
+
+A VS Code extension that provides context-aware spell checking powered by GitHub Copilot. Unlike traditional spell checkers, it uses AI to understand programming terminology and provide more intelligent suggestions based on the context of your code and documentation.
 
 ## Features
 
@@ -22,6 +24,9 @@ This extension contributes the following settings:
 
 ## Known Issues
 
-- Commonly has JSON parsing errors.
-- Commonly includes words that should be ignored.
-- Is slow due to needing to query the language model.
+⚠️ Development was stopped due to fundamental limitations:
+- Slow performance due to language model queries makes it impractical for real-time use
+- Frequent JSON parsing errors from the API responses
+- Poor accuracy with technical terms and programming-specific vocabulary
+
+The core concept of using LLMs for spell checking might be better suited as a batch process rather than a real-time VS Code extension.
