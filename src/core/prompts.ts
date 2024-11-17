@@ -16,7 +16,9 @@ export function getSpellCheckPrompt() {
   const { additionalPrompt, ignoredWords } = getSettings();
 
   return vscode.LanguageModelChatMessage.User(`
-You are a code-aware spell checker. Analyze the following code for spelling mistakes in:
+You are a code-aware spell checker.
+
+Analyze the following file for spelling mistakes, such as:
 - String literals
 - Variable names
 - Function names
@@ -24,24 +26,33 @@ You are a code-aware spell checker. Analyze the following code for spelling mist
 - Comments
 - Property names
 
-IGNORE:
+Ignore words that the user would not want to be spell-checked, such as:
 - Imported names
 - Library/dependency names
 - Technical abbreviations (e.g., 'src', 'dist', 'pkg')
-- Common programming terms (e.g., 'async', 'func', 'impl')
+- Common programming terms for the given file (e.g., 'async', 'func', 'impl')
+- Any names that are part of externally defined config files (e.g., 'tsconfig.json', 'settings.json')
 
-Ignored words: ${ignoredWords.join(", ")}
+Additional ignored words: ${ignoredWords.map((s) => `"${s}"`).join(", ")}
 
-Additional information: ${additionalPrompt}
+Additional user information: ${additionalPrompt}
 
 The response must be a valid parsable JSON string which matches the schema:
 z.object({
-    word: z.string(),
-    before: z.string(),
-    lineIndex: z.number().int(),
-    reason: z.string(),
-    suggestion: z.string().nullable(),
+  word: z.string(),
+  before: z.string(),
+  lineIndex: z.number().int(),
+  reason: z.string(),
+  suggestion: z.string().nullable(),
 })
+
+The "before" field should contain the text before the misspelled text.
+There should not be any overlap with the "word" and the "before" fields.
+It should not include the line number annotation.
+
+The JSON should be a valid JSON string, meaning that strings are double-quoted.
+
+If there are no spelling mistakes, you can respond with an empty array.
 
 It is not necessary to wrap your response in triple backticks.
 Here is an example of what your response should look like:
@@ -99,13 +110,13 @@ export function getCodeDocumentPrompt(document: vscode.TextDocument) {
   const fileContent = document.getText();
   const fileContentWithLineNumbers = fileContent
     .split("\n")
-    .map((line, i) => `${i}:\n${line}`)
+    .map((line, i) => `----------------- line ${i}\n${line}`)
     .join("\n");
   return vscode.LanguageModelChatMessage.User(`
-  Editor language code: ${userLanguage}
-  Language ID: ${languageId}
-  File Name: ${fileName}
-  File Content with line number annotations:
-  ${fileContentWithLineNumbers}
+Editor language code: ${userLanguage}
+Language ID: ${languageId}
+File Name: ${fileName}
+File Content with line number annotations:
+${fileContentWithLineNumbers}
   `);
 }

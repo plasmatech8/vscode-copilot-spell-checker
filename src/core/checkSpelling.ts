@@ -120,6 +120,6 @@ async function parseChatResponse(
 function cleanChatResponseText(responseText: string) {
   responseText = responseText.replace(/```^json/g, "");
   responseText = responseText.replace(/```$/g, "");
-  responseText = responseText.match(/[.+]/)?.[0] ?? "[]";
+  responseText = responseText.match(/(\[.+\])/s)?.[0] ?? "[]";
   return responseText;
 }
