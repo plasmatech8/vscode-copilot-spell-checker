@@ -1,6 +1,20 @@
 import * as vscode from "vscode";
+import { z } from "zod";
+import { getSettings } from "./settings";
+
+export const spellingCorrectionSchema = z.array(
+  z.object({
+    word: z.string(),
+    before: z.string(),
+    lineIndex: z.number().int(),
+    reason: z.string(),
+    suggestion: z.string().nullable(),
+  })
+);
 
 export function getSpellCheckPrompt() {
+  const { additionalPrompt, ignoredWords } = getSettings();
+
   return vscode.LanguageModelChatMessage.User(`
 You are a code-aware spell checker. Analyze the following code for spelling mistakes in:
 - String literals
@@ -16,7 +30,11 @@ IGNORE:
 - Technical abbreviations (e.g., 'src', 'dist', 'pkg')
 - Common programming terms (e.g., 'async', 'func', 'impl')
 
-The response must match this schema and must be a valid parsable JSON string:
+Ignored words: ${ignoredWords.join(", ")}
+
+Additional information: ${additionalPrompt}
+
+The response must be a valid parsable JSON string which matches the schema:
 z.object({
     word: z.string(),
     before: z.string(),
@@ -25,7 +43,6 @@ z.object({
     suggestion: z.string().nullable(),
 })
 
-Format each suggestion as a JSON array.
 It is not necessary to wrap your response in triple backticks.
 Here is an example of what your response should look like:
 [

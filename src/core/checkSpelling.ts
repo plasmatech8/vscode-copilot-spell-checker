@@ -1,6 +1,11 @@
 import * as vscode from "vscode";
 import { z } from "zod";
-import { getSpellCheckPrompt, getCodeDocumentPrompt } from "./prompts";
+import {
+  getSpellCheckPrompt,
+  getCodeDocumentPrompt,
+  spellingCorrectionSchema,
+} from "./prompts";
+import { getSettings } from "./settings";
 
 export async function checkSpelling(
   document: vscode.TextDocument,
@@ -53,23 +58,20 @@ export async function checkSpelling(
   }
 }
 
-const spellingCorrectionSchema = z.array(
-  z.object({
-    word: z.string(),
-    before: z.string(),
-    lineIndex: z.number().int(),
-    reason: z.string(),
-    suggestion: z.string().nullable(),
-  })
-);
-
 async function retrieveSpellCheckSuggestions(
   document: vscode.TextDocument,
   outputChannel: vscode.OutputChannel
 ) {
+  const { modelFamily } = getSettings();
+
   // Compile messages and get model
   const messages = [getSpellCheckPrompt(), getCodeDocumentPrompt(document)];
-  const [model] = await vscode.lm.selectChatModels();
+  const [model] = await vscode.lm.selectChatModels({
+    family: modelFamily === "auto" ? undefined : modelFamily,
+  });
+  outputChannel.appendLine(
+    `Using langauge model: copilot ${modelFamily} family`
+  );
 
   // Send request to language model
   try {
@@ -78,12 +80,12 @@ async function retrieveSpellCheckSuggestions(
       { justification: "spell-checker" },
       new vscode.CancellationTokenSource().token
     );
-    const responseText = await parseChatResponse(chatResponse);
-
+    const fullResponseText = await parseChatResponse(chatResponse);
     outputChannel.appendLine(
-      `Language model chat response for ${document.fileName}:\n${responseText}`
+      `Language model chat response for ${document.fileName}:\n${fullResponseText}`
     );
-    const responseJson = JSON.parse(responseText);
+    const cleanResponseText = cleanChatResponseText(fullResponseText);
+    const responseJson = JSON.parse(cleanResponseText);
     return await spellingCorrectionSchema.parseAsync(responseJson);
   } catch (err) {
     // Log specific error details
@@ -112,5 +114,12 @@ async function parseChatResponse(
   for await (const chunk of chatResponse.text) {
     responseText += chunk;
   }
+  return responseText;
+}
+
+function cleanChatResponseText(responseText: string) {
+  responseText = responseText.replace(/```^json/g, "");
+  responseText = responseText.replace(/```$/g, "");
+  responseText = responseText.match(/[.+]/)?.[0] ?? "[]";
   return responseText;
 }

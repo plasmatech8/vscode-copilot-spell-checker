@@ -14,12 +14,30 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "copilot-spell-checker.helloWorld",
-        "title": "Hello World"
+    "commands": [],
+    "configuration": {
+      "title": "Copilot Spell Checker",
+      "properties": {
+        "copilotSpellChecker.ignoredWords": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Words to ignore during spell checking"
+        },
+        "copilotSpellChecker.additionalPrompt": {
+          "type": "string",
+          "default": "",
+          "description": "Additional instructions for the spell checker"
+        },
+        "copilotSpellChecker.modelFamily": {
+          "type": "string",
+          "default": "auto",
+          "description": "Model family to use for spell checking"
+        }
       }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

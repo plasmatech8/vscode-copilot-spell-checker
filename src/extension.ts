@@ -1,18 +1,37 @@
 import * as vscode from "vscode";
-import { checkSpelling } from "./checkSpelling";
+import { checkSpelling } from "./core/checkSpelling";
 
 export async function activate(context: vscode.ExtensionContext) {
   // Output channel
+  const outputChannel = createOutputChannel();
+
+  // Spelling diagnostics
+  const spellingDiagnostics = createDiagnosticCollection();
+
+  // Spell checking events and suggestions
+  registerSpellCheckingEvents(context, spellingDiagnostics, outputChannel);
+
+  // Register the command to apply the fix
+}
+
+function createOutputChannel() {
   const outputChannel = vscode.window.createOutputChannel(
     "Copilot Spell Checker"
   );
   outputChannel.appendLine("Copilot Spell Checker is active");
   outputChannel.show();
+  return outputChannel;
+}
 
-  // Spelling diagnostics
-  const spellingDiagnostics =
-    vscode.languages.createDiagnosticCollection("spelling");
+function createDiagnosticCollection() {
+  return vscode.languages.createDiagnosticCollection("spelling");
+}
 
+function registerSpellCheckingEvents(
+  context: vscode.ExtensionContext,
+  spellingDiagnostics: vscode.DiagnosticCollection,
+  outputChannel: vscode.OutputChannel
+) {
   // Check spelling when a text document is opened
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument((document) => {
@@ -39,28 +58,6 @@ export async function activate(context: vscode.ExtensionContext) {
       spellingDiagnostics.dispose();
     },
   });
-
-  // Register the command to apply the fix
-  vscode.commands.registerCommand(
-    "spellCheck.fix",
-    async ({ documentUri, range, suggestion }) => {
-      const document = await vscode.workspace.openTextDocument(
-        vscode.Uri.parse(documentUri)
-      );
-      const edit = new vscode.WorkspaceEdit();
-      edit.replace(
-        document.uri,
-        new vscode.Range(
-          range.start.line,
-          range.start.character,
-          range.end.line,
-          range.end.character
-        ),
-        suggestion
-      );
-      await vscode.workspace.applyEdit(edit);
-    }
-  );
 }
 
 export function deactivate() {}
